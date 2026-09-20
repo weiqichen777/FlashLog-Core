@@ -72,11 +72,12 @@ static void *consumer_thread(void *arg) {
 
 int main(void) {
     printf("======================================================================\n");
-    printf("[Phase 3] Starting Lock-free Concurrency Stress Test (%lu logs)...\n", TOTAL_LOG_COUNT);
+    printf("Starting Lock-free Concurrency Stress Test (%lu logs)...\n", TOTAL_LOG_COUNT);
 
     remove(CONCURRENT_TEST_FILE);
-    assert(hal_flash_mock_init(CONCURRENT_TEST_FILE));
-    assert(logger_engine_init(&g_engine, hal_flash_mock_get_ops()));
+    assert(hal_flash_mock_init(CONCURRENT_TEST_FILE, 65536, 512));
+    LoggerConfig cfg = { .total_blocks = 65536, .block_size = 512 };
+    assert(logger_engine_init(&g_engine, hal_flash_mock_get_ops(), &cfg));
 
     pthread_t th_prod, th_cons;
 
@@ -100,7 +101,7 @@ int main(void) {
     assert(g_consumer_received_count == TOTAL_LOG_COUNT);
     assert(g_producer_checksum == g_consumer_checksum);
 
-    printf("[Phase 3] PASSED: Zero Data Race, Perfect Monotonic Order, 100%% Integrity.\n");
+    printf("PASSED: Zero Data Race, Perfect Monotonic Order, 100%% Integrity.\n");
     printf("======================================================================\n\n");
     return 0;
 }

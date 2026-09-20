@@ -21,7 +21,7 @@ static HalBlockOps mock_ops = { .raw_write = mock_write, .raw_read = NULL };
 
 int main(void) {
     printf("======================================================================\n");
-    printf("[Phase 1] Starting Core Unit Tests...\n");
+    printf("Starting Core Unit Tests...\n");
 
     // 1. MemPool 測試
     uint8_t pool_mem[4 * 32];
@@ -39,7 +39,7 @@ int main(void) {
     RingBuffer rb;
     assert(ring_buf_init(&rb, rb_storage, sizeof(uint32_t), 4));
     rb.head = 0xFFFFFFFEU;
-    rb.tail = 0xFFFFFFFEU;
+    rb.tail = 0xFFFFFFFEU; // 人為設置在 32-bit 邊界
     uint32_t val1 = 0x11, val2 = 0x22;
     assert(ring_buf_push(&rb, &val1));
     assert(ring_buf_push(&rb, &val2));
@@ -60,8 +60,10 @@ int main(void) {
     assert(bitmap_find_and_alloc(&bm) == 0); // 重新分配 0
 
     // 4. BdevWrapper 聚合寫入測試
+    uint8_t bdev_buf[BDEV_BLOCK_SIZE];
     BdevWrapper bdev;
-    assert(bdev_wrapper_init(&bdev, &mock_ops, 0));
+    assert(bdev_wrapper_init(&bdev, &mock_ops, bdev_buf, BDEV_BLOCK_SIZE, 0));
+
     uint8_t payload[300];
     memset(payload, 0xAB, sizeof(payload));
 
@@ -80,7 +82,7 @@ int main(void) {
     assert(mock_flash[1][87] == 0xAB);
     assert(mock_flash[1][88] == 0xFF); // 驗證 Padding 填滿 0xFF
 
-    printf("[Phase 1] All Core Component Tests Passed Successfully.\n");
+    printf("PASSED: All Core Component Tests Passed.\n");
     printf("======================================================================\n\n");
     return 0;
 }

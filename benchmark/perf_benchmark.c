@@ -87,8 +87,12 @@ static void bench_ring_buffer(void) {
 static void bench_bdev_coalescing(void) {
     printf("[3/3] Benchmarking Driver Wrapper (WAF & Write Reduction)...\n");
 
+    #define BENCH_BLOCK_SIZE 512
+    uint8_t bdev_cache_buf[BENCH_BLOCK_SIZE];
     BdevWrapper bdev;
-    if (!bdev_wrapper_init(&bdev, &bench_hal_ops, 0)) {
+    
+    // 傳入完整的 5 個參數：&bdev, ops, buffer, block_size, start_block
+    if (!bdev_wrapper_init(&bdev, &bench_hal_ops, bdev_cache_buf, BENCH_BLOCK_SIZE, 0)) {
         fprintf(stderr, "BdevWrapper init failed\n");
         return;
     }
@@ -104,27 +108,24 @@ static void bench_bdev_coalescing(void) {
     bdev_wrapper_flush(&bdev);
 
     uint64_t total_payload_bytes = LOG_WRITES * sizeof(dummy_log);
-    uint64_t total_flash_bytes_written = (uint64_t)g_raw_block_writes * BDEV_BLOCK_SIZE;
+    uint64_t total_flash_bytes_written = (uint64_t)g_raw_block_writes * BENCH_BLOCK_SIZE;
     double waf = (double)total_flash_bytes_written / (double)total_payload_bytes;
     double reduction_pct = (1.0 - ((double)g_raw_block_writes / (double)LOG_WRITES)) * 100.0;
 
     printf("  -> Telemetry Log Count:      %lu writes (32 bytes each)\n", LOG_WRITES);
-    printf("  -> Flash Physical Blocks:    %u writes (512 bytes each)\n", g_raw_block_writes);
+    printf("  -> Flash Physical Blocks:    %u writes (%d bytes each)\n", g_raw_block_writes, BENCH_BLOCK_SIZE);
     printf("  -> Write Amplification (WAF): %.2f\n", waf);
     printf("  -> Flash Wear Reduction:     %.2f%%\n\n", reduction_pct);
 }
 
 int main(void) {
     printf("======================================================================\n");
-    printf("       FlashLog-Core Subsystem Micro-Benchmark Suite\n");
-    printf("======================================================================\n\n");
 
     bench_memory_pool();
     bench_ring_buffer();
     bench_bdev_coalescing();
 
-    printf("======================================================================\n");
-    printf("  Benchmark Completed Successfully.\n");
+    printf("PASSED: Benchmark Completed.\n");
     printf("======================================================================\n");
     return 0;
 }

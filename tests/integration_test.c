@@ -6,18 +6,25 @@
 
 #define TEST_IMAGE "virtual_flash.bin"
 #define TEST_PACKET_COUNT 100
+#define TEST_TOTAL_BLOCKS 64
+#define TEST_BLOCK_SIZE   512
 
 int main(void) {
     printf("======================================================================\n");
-    printf("[Phase 2] Starting End-to-End Pipeline Integration Test...\n");
+    printf("Starting End-to-End Pipeline Integration Test...\n");
 
     // 移除舊的模擬映像檔
     remove(TEST_IMAGE);
 
-    // 1. 初始化 Mock HAL 與 Logger Engine
-    assert(hal_flash_mock_init(TEST_IMAGE));
+    // 1. 初始化 Mock HAL 與 Logger Engine (傳入動態參數)
+    assert(hal_flash_mock_init(TEST_IMAGE, TEST_TOTAL_BLOCKS, TEST_BLOCK_SIZE));
+    
+    LoggerConfig cfg = {
+        .total_blocks = TEST_TOTAL_BLOCKS,
+        .block_size = TEST_BLOCK_SIZE
+    };
     LoggerEngine engine;
-    assert(logger_engine_init(&engine, hal_flash_mock_get_ops()));
+    assert(logger_engine_init(&engine, hal_flash_mock_get_ops(), &cfg));
 
     // 2. 模擬寫入 100 筆遙測資料
     printf("  -> Enqueueing %d telemetry logs...\n", TEST_PACKET_COUNT);
@@ -72,7 +79,7 @@ int main(void) {
     fclose(fp);
     assert(expected_seq == TEST_PACKET_COUNT + 1);
 
-    printf("[Phase 2] Verification PASSED: 100%% Monotonic & Payload Accurate.\n");
+    printf("PASSED: 100%% Monotonic & Payload Accurate.\n");
     printf("======================================================================\n\n");
     return 0;
 }
